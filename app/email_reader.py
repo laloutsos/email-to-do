@@ -2,13 +2,14 @@ from imapclient import IMAPClient
 import pyzmail
 from datetime import datetime
 import html2text
-import re
+
 
 from app.email_model import Email
+from app.summarizer import summarize_email
 
 HOST = 'imap.gmail.com'
-USERNAME = 'your.email@gmail.com'
-PASSWORD = 'your_app_password'
+USERNAME = 'laloutsosnikos@gmail.com'
+PASSWORD = 'jxxm uecz cvuh todc'
 
 
 
@@ -75,11 +76,13 @@ def fetch_emails_imap():
 
             body = clean_body(body)
 
+
             date_header = message.get_decoded_header('date')
             try:
                 date_obj = datetime.strptime(date_header[:-6], '%a, %d %b %Y %H:%M:%S')
             except Exception:
                 date_obj = datetime.now()
+
 
             email_obj = Email(
                 subject=subject,
@@ -87,7 +90,8 @@ def fetch_emails_imap():
                 from_email=from_email,
                 to_email=to_email,
                 date=date_obj,
-                message_id=str(msgid)
+                message_id=str(msgid),
+                summary = summarize_email(body)
             )
             emails.append(email_obj)
     return emails
@@ -101,3 +105,5 @@ if __name__ == "__main__":
         print("Body:")
         print(e.body)
         print("-" * 40)
+
+
