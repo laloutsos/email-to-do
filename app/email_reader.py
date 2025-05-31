@@ -2,19 +2,13 @@ from imapclient import IMAPClient
 import pyzmail
 from datetime import datetime
 import html2text
-
+import re
+#import getpass
 
 from app.email_model import Email
-from app.summarizer import summarize_email
+import time
 
 HOST = 'imap.gmail.com'
-USERNAME = 'laloutsosnikos@gmail.com'
-PASSWORD = 'jxxm uecz cvuh todc'
-
-
-
-import re
-
 
 def clean_body(body: str) -> str:
     stop_phrases = [
@@ -35,20 +29,16 @@ def clean_body(body: str) -> str:
             body = body[:index].strip()
 
     body = re.sub(r'http\S+', '', body)
-
     body = re.sub(r'\b[\d,]{3,}\b', '', body)
-
     body = re.sub(r'\[.*?\]', '', body)
-
     body = re.sub(r'[\x00-\x1F\x7F-\x9F]', '', body)
-
     body = re.sub(r'\n{2,}', '\n\n', body)
     body = re.sub(r'[ \t]{2,}', ' ', body)
 
     return body.strip()
 
 
-def fetch_emails_imap():
+def fetch_emails_imap(USERNAME,PASSWORD):
     emails = []
 
     with IMAPClient(HOST) as server:
@@ -56,7 +46,7 @@ def fetch_emails_imap():
         server.select_folder('INBOX', readonly=True)
 
         messages = server.search(['ALL'])
-        messages = messages[-20:]
+        messages = messages[-1:]
 
         for msgid, data in server.fetch(messages, ['ENVELOPE', 'BODY[]']).items():
             message = pyzmail.PyzMessage.factory(data[b'BODY[]'])
@@ -69,13 +59,11 @@ def fetch_emails_imap():
                 body = message.text_part.get_payload().decode(message.text_part.charset)
             elif message.html_part:
                 html = message.html_part.get_payload().decode(message.html_part.charset)
-
                 body = html2text.html2text(html)
             else:
                 body = ""
 
             body = clean_body(body)
-
 
             date_header = message.get_decoded_header('date')
             try:
@@ -91,19 +79,32 @@ def fetch_emails_imap():
                 to_email=to_email,
                 date=date_obj,
                 message_id=str(msgid),
-                summary = summarize_email(body)
+                #summary=summary
             )
             emails.append(email_obj)
     return emails
 
-if __name__ == "__main__":
-    emails = fetch_emails_imap()
-    for e in emails:
-        print(f"Subject: {e.subject}")
-        print(f"From: {e.from_email}")
-        print(f"Date: {e.date}")
-        print("Body:")
-        print(e.body)
-        print("-" * 40)
 
+if __name__ == "__main__":
+    USERNAME = input("Type your email: ")
+    PASSWORD = input("Type your password: ")
+    print("Connecting...")
+    try:
+        while True:
+            emails = fetch_emails_imap(USERNAME, PASSWORD)
+            for e in emails:
+                print(f"Subject: {e.subject}")
+                print(f"From: {e.from_email}")
+                print(f"Date: {e.date}")
+                print("Body:")
+                print(e.body)
+                print("Summary:")
+                print(e.summary)
+                print("-" * 40)
+
+            print("Waiting 5 minutes before next fetch...")
+            time.sleep(300)
+
+    except KeyboardInterrupt:
+        print("\nStopped by user. Exiting gracefully...")
 

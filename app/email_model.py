@@ -9,4 +9,3 @@ class Email(BaseModel):
     to_email: Optional[EmailStr]
     date: datetime
     message_id: Optional[str]
-    summary: Optional[str] = None
