@@ -1,14 +1,47 @@
+import os
+
 from imapclient import IMAPClient
 import pyzmail
 from datetime import datetime
 import html2text
 import re
+from pathlib import Path
 #import getpass
 
 from app.email_model import Email
 import time
 
 HOST = 'imap.gmail.com'
+
+def save_email_as_html(email_obj: Email, output_dir="saved_emails"):
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+
+    safe_subject = re.sub(r'[\\/*?:"<>|]', "_", email_obj.subject or "no_subject")
+
+    filename = f"{email_obj.date.strftime('%Y%m%d_%H%M%S')}_{safe_subject[:50]}.html"
+    filepath = os.path.join(output_dir, filename)
+
+    html_content = f"""
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>{email_obj.subject}</title>
+    </head>
+    <body>
+        <h2>{email_obj.subject}</h2>
+        <p><strong>From:</strong> {email_obj.from_email}</p>
+        <p><strong>To:</strong> {email_obj.to_email}</p>
+        <p><strong>Date:</strong> {email_obj.date}</p>
+        <hr>
+        <pre>{email_obj.body}</pre>
+    </body>
+    </html>
+    """
+
+    with open(filepath, "w", encoding="utf-8") as f:
+        f.write(html_content)
+
+    print(f"Email saved to: {filepath}")
 
 def clean_body(body: str) -> str:
     stop_phrases = [
@@ -98,9 +131,11 @@ if __name__ == "__main__":
                 print(f"Date: {e.date}")
                 print("Body:")
                 print(e.body)
-                print("Summary:")
-                print(e.summary)
+                save_email_as_html(e)
+                #print("Summary:")
+                #print(e.summary)
                 print("-" * 40)
+
 
             print("Waiting 5 minutes before next fetch...")
             time.sleep(300)
