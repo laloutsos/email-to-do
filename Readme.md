@@ -77,7 +77,6 @@ This project consists of several modules working together to retrieve emails fro
 uvicorn app.main:app --reload
 ```
 ---
-Sure! Here's a polished, clear, and professional way to write that section in English for your README:
 
 ---
 
